@@ -46,6 +46,63 @@ function speak(text) {
   window.speechSynthesis.speak(new SpeechSynthesisUtterance(text));
 }
 
+const QUESTS = [
+  "Find something with five petals",
+  "Find a tree older than you",
+  "Find three different shades of green",
+  "Find something that is making a sound",
+  "Find something growing through a crack",
+  "Find a seed or a fruit",
+  "Find a bird, without chasing it",
+  "Find a leaf with an interesting pattern",
+  "Find something that smells good",
+  "Find an insect doing something",
+  "Find the smallest flower you can",
+  "Find a plant you've walked past a hundred times",
+];
+
+function todaysQuests() {
+  const day = Math.floor(Date.now() / 86400000);
+  return [0, 1, 2].map((i) => QUESTS[(day * 3 + i) % QUESTS.length]);
+}
+
+function Quests() {
+  const key = "wildlog-quest-" + new Date().toDateString();
+  const quests = todaysQuests();
+  const [done, setDone] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(key)) || [];
+    } catch {
+      return [];
+    }
+  });
+
+  function toggle(i) {
+    const next = done.includes(i) ? done.filter((x) => x !== i) : [...done, i];
+    setDone(next);
+    try {
+      localStorage.setItem(key, JSON.stringify(next));
+    } catch {}
+  }
+
+  return (
+    <section className="quests">
+      <h2>Today's quest</h2>
+      {quests.map((q, i) => (
+        <label key={i}>
+          <input
+            type="checkbox"
+            checked={done.includes(i)}
+            onChange={() => toggle(i)}
+          />{" "}
+          {q}
+        </label>
+      ))}
+      <small>{done.length}/3 found</small>
+    </section>
+  );
+}
+
 export default function App() {
   const [preview, setPreview] = useState(null);
   const [thumb, setThumb] = useState(null);
@@ -168,6 +225,7 @@ export default function App() {
       {entries.length === 0 && (
         <p className="sub">Nothing yet. Go find something outside.</p>
       )}
+      <Quests/>
       {entries.map((en) => (
         <article className="entry" key={en.id}>
           {en.thumb && <img src={en.thumb} alt={en.name} />}

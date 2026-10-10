@@ -84,3 +84,13 @@ body {
   cursor: pointer;
   padding: 0;
 }
+
+.quests {
+  background: white;
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  text-align: left;
+}
+.quests h2 { margin: 0 0 8px; font-size: 1.1rem; }
+.quests label { display: block; margin: 6px 0; }
