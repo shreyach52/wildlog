@@ -1,122 +1,180 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useState, useEffect } from "react";
 
-function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+function resizeToJpeg(file, maxSize = 800, quality = 0.85) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      canvas.toBlob(
+        (b) => (b ? resolve(b) : reject(new Error("Could not convert image"))),
+        "image/jpeg",
+        quality
+      );
+    };
+    img.onerror = () => reject(new Error("Could not read image"));
+    img.src = url;
+  });
 }
 
-export default App
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = reject;
+    r.readAsDataURL(blob);
+  });
+}
+
+function loadEntries() {
+  try {
+    return JSON.parse(localStorage.getItem("wildlog-entries")) || [];
+  } catch {
+    return [];
+  }
+}
+
+export default function App() {
+  const [preview, setPreview] = useState(null);
+  const [thumb, setThumb] = useState(null);
+  const [result, setResult] = useState(null);
+  const [note, setNote] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [seconds, setSeconds] = useState(null);
+  const [error, setError] = useState("");
+  const [entries, setEntries] = useState(loadEntries);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("wildlog-entries", JSON.stringify(entries));
+    } catch {
+      setError("Could not save to the journal (storage may be full).");
+    }
+  }, [entries]);
+
+  async function handleFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setError("");
+    setResult(null);
+    setNote("");
+    setSeconds(null);
+    setPreview(URL.createObjectURL(file));
+    setLoading(true);
+
+    const start = Date.now();
+    try {
+      const jpeg = await resizeToJpeg(file);
+      const small = await resizeToJpeg(file, 200, 0.7);
+      setThumb(await blobToDataUrl(small));
+
+      const form = new FormData();
+      form.append("photo", jpeg, "photo.jpg");
+
+      const res = await fetch("http://localhost:5000/api/identify", {
+        method: "POST",
+        body: form,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Something went wrong");
+
+      setResult(data);
+      setSeconds(((Date.now() - start) / 1000).toFixed(1));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+      e.target.value = "";
+    }
+  }
+
+  function saveEntry() {
+    const entry = {
+      id: Date.now(),
+      name: result.name,
+      fact: result.fact,
+      confidence: result.confidence,
+      note,
+      thumb,
+      date: new Date().toLocaleString(),
+    };
+    setEntries([entry, ...entries]);
+    setResult(null);
+    setPreview(null);
+    setThumb(null);
+    setNote("");
+  }
+
+  function deleteEntry(id) {
+    setEntries(entries.filter((en) => en.id !== id));
+  }
+
+  return (
+    <main className="app">
+      <h1>WildLog</h1>
+      <p className="sub">Point, snap, learn. Then put the phone away.</p>
+
+      <label className="capture">
+        {loading ? "Identifying..." : "Take or choose a photo"}
+        <input
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handleFile}
+          disabled={loading}
+          hidden
+        />
+      </label>
+
+      {preview && <img className="preview" src={preview} alt="Your photo" />}
+
+      {error && <p className="error">{error}</p>}
+
+      {result && (
+        <section className="result">
+          <h2>{result.name}</h2>
+          <p>{result.fact}</p>
+          <small>
+            Confidence: {result.confidence}
+            {seconds && ` · ${seconds}s`}
+          </small>
+          <textarea
+            placeholder="Where were you? What did you notice?"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+          />
+          <button className="save" onClick={saveEntry}>
+            Save to journal
+          </button>
+        </section>
+      )}
+
+      <h2 className="journal-title">Your journal ({entries.length})</h2>
+      {entries.length === 0 && (
+        <p className="sub">Nothing yet. Go find something outside.</p>
+      )}
+      {entries.map((en) => (
+        <article className="entry" key={en.id}>
+          {en.thumb && <img src={en.thumb} alt={en.name} />}
+          <div>
+            <h3>{en.name}</h3>
+            <p>{en.fact}</p>
+            {en.note && <p className="note">"{en.note}"</p>}
+            <small>
+              {en.date} · {en.confidence}
+            </small>
+            <button className="del" onClick={() => deleteEntry(en.id)}>
+              Delete
+            </button>
+          </div>
+        </article>
+      ))}
+    </main>
+  );
+}
