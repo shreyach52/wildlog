@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import multer from "multer";
+const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
 
 const app = express();
 app.use(cors());
@@ -16,7 +17,7 @@ app.post("/api/identify", upload.single("photo"), async (req, res) => {
   const base64 = req.file.buffer.toString("base64");
 
   try {
-    const r = await fetch("http://localhost:11434/api/chat", {
+    const r = await fetch(`${OLLAMA_URL}/api/chat`,  {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -44,4 +45,4 @@ app.post("/api/identify", upload.single("photo"), async (req, res) => {
   }
 });
 
-app.listen(5000, () => console.log("Server on http://localhost:5000"));
+app.listen(process.env.PORT || 5000, () => console.log("Server running"));

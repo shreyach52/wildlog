@@ -1,5 +1,34 @@
 import { useState, useEffect } from "react";
 
+const API =
+  import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5000`;
+
+const IS_LOCAL =
+  ["localhost", "127.0.0.1"].includes(window.location.hostname) ||
+  /^(192\.168\.|10\.|172\.)/.test(window.location.hostname);
+
+// Replace each fact with the real text Gemma gave you during your outdoor tests.
+const DEMO_RESULTS = [
+  { name: "Mango tree", fact: "PASTE A REAL FACT FROM YOUR JOURNAL", confidence: "high" },
+  { name: "Holy basil (Tulsi)", fact: "PASTE A REAL FACT FROM YOUR JOURNAL", confidence: "high" },
+  { name: "Boston fern", fact: "PASTE A REAL FACT FROM YOUR JOURNAL", confidence: "medium" },
+];
+
+const QUESTS = [
+  "Find something with five petals",
+  "Find a tree older than you",
+  "Find three different shades of green",
+  "Find something that is making a sound",
+  "Find something growing through a crack",
+  "Find a seed or a fruit",
+  "Find a bird, without chasing it",
+  "Find a leaf with an interesting pattern",
+  "Find something that smells good",
+  "Find an insect doing something",
+  "Find the smallest flower you can",
+  "Find a plant you've walked past a hundred times",
+];
+
 function resizeToJpeg(file, maxSize = 800, quality = 0.85) {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -38,28 +67,12 @@ function loadEntries() {
     return [];
   }
 }
-const API = `http://${window.location.hostname}:5000`;
 
 function speak(text) {
   if (!("speechSynthesis" in window)) return;
   window.speechSynthesis.cancel();
   window.speechSynthesis.speak(new SpeechSynthesisUtterance(text));
 }
-
-const QUESTS = [
-  "Find something with five petals",
-  "Find a tree older than you",
-  "Find three different shades of green",
-  "Find something that is making a sound",
-  "Find something growing through a crack",
-  "Find a seed or a fruit",
-  "Find a bird, without chasing it",
-  "Find a leaf with an interesting pattern",
-  "Find something that smells good",
-  "Find an insect doing something",
-  "Find the smallest flower you can",
-  "Find a plant you've walked past a hundred times",
-];
 
 function todaysQuests() {
   const day = Math.floor(Date.now() / 86400000);
@@ -140,9 +153,11 @@ export default function App() {
 
       const form = new FormData();
       form.append("photo", jpeg, "photo.jpg");
-      const res = await fetch(`${API}/api/identify`, {  
+
+      const res = await fetch(`${API}/api/identify`, {
         method: "POST",
         body: form,
+        signal: AbortSignal.timeout(90000),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Something went wrong");
@@ -150,7 +165,14 @@ export default function App() {
       setResult(data);
       setSeconds(((Date.now() - start) / 1000).toFixed(1));
     } catch (err) {
-      setError(err.message);
+      if (!IS_LOCAL) {
+        setResult({
+          ...DEMO_RESULTS[Math.floor(Math.random() * DEMO_RESULTS.length)],
+          demo: true,
+        });
+      } else {
+        setError(err.message);
+      }
     } finally {
       setLoading(false);
       e.target.value = "";
@@ -183,6 +205,8 @@ export default function App() {
       <h1>WildLog</h1>
       <p className="sub">Point, snap, learn. Then put the phone away.</p>
 
+      <Quests />
+
       <label className="capture">
         {loading ? "Identifying..." : "Take or choose a photo"}
         <input
@@ -202,14 +226,23 @@ export default function App() {
       {result && (
         <section className="result">
           <h2>{result.name}</h2>
+          {result.demo && (
+            <p className="demo">
+              Live model unavailable right now, so this is a sample result from
+              my outdoor tests.
+            </p>
+          )}
           <p>{result.fact}</p>
           <small>
             Confidence: {result.confidence}
             {seconds && ` · ${seconds}s`}
           </small>
-          <button className="save" onClick={() => speak(`${result.name}. ${result.fact}`)}>
-  Read aloud
-</button>
+          <button
+            className="save"
+            onClick={() => speak(`${result.name}. ${result.fact}`)}
+          >
+            Read aloud
+          </button>
           <textarea
             placeholder="Where were you? What did you notice?"
             value={note}
@@ -225,7 +258,6 @@ export default function App() {
       {entries.length === 0 && (
         <p className="sub">Nothing yet. Go find something outside.</p>
       )}
-      <Quests/>
       {entries.map((en) => (
         <article className="entry" key={en.id}>
           {en.thumb && <img src={en.thumb} alt={en.name} />}
