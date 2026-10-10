@@ -4,6 +4,9 @@ body {
   background: #f3f7f1;
   color: #1f2a1f;
 }
+
+img { max-width: 100%; }
+
 .app {
   max-width: 480px;
   margin: 0 auto;
@@ -11,6 +14,7 @@ body {
   text-align: center;
 }
 .sub { color: #5a6b5a; margin-bottom: 24px; }
+
 .capture {
   display: block;
   background: #2f6b3a;
@@ -34,6 +38,7 @@ body {
 }
 .result h2 { margin-top: 0; }
 .error { color: #b3261e; margin-top: 16px; }
+
 .result textarea {
   width: 100%;
   box-sizing: border-box;
@@ -55,6 +60,7 @@ body {
   font-size: 1rem;
   cursor: pointer;
 }
+
 .journal-title { margin-top: 32px; text-align: left; }
 .entry {
   display: flex;
@@ -94,3 +100,34 @@ body {
 }
 .quests h2 { margin: 0 0 8px; font-size: 1.1rem; }
 .quests label { display: block; margin: 6px 0; }
+
+.demo {
+  background: #fff4d6;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+.samples {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.sample {
+  padding: 0;
+  border: 3px solid transparent;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  background: none;
+}
+.sample.active { border-color: #2f6b3a; }
+.sample img {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  display: block;
+}
+.verdict { font-weight: 600; margin-top: 10px; }
