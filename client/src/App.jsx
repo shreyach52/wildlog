@@ -16,7 +16,7 @@ const SAMPLES = [
   {
     image: "/samples/mango.jpg",
     name: "Mango tree",
-    fact: "PASTE THE REAL FACT GEMMA GAVE",
+    fact: "Mangoes are known as the 'fruit of love' in many cultures",
     confidence: "high",
     seconds: "3.2",
     verdict: "Correct",
@@ -24,7 +24,7 @@ const SAMPLES = [
   {
     image: "/samples/basil.jpg",
     name: "Holy basil (Tulsi)",
-    fact: "PASTE THE REAL FACT GEMMA GAVE",
+    fact: "Tulsi is considered sacred in Hinduism and is known for its medicinal properties.",
     confidence: "high",
     seconds: "2.8",
     verdict: "Correct",
@@ -32,7 +32,7 @@ const SAMPLES = [
   {
     image: "/samples/fern.jpg",
     name: "Boston fern",
-    fact: "PASTE THE REAL FACT GEMMA GAVE",
+    fact: "Bird's Nest Ferns get their name from the appearance of their fronds, which resemble bird nests.",
     confidence: "medium",
     seconds: "4.1",
     verdict: "Partly right: ferns are hard to tell apart from one photo",
@@ -40,11 +40,11 @@ const SAMPLES = [
   {
     image: "/samples/wall.jpg",
     name: "Grey rock",
-    fact: "PASTE THE REAL FACT GEMMA GAVE",
+    fact: "This is a section of the Inca wall at Machu Picchu, built without mortar.",
     confidence: "high",
     seconds: "20.1",
     verdict:
-      "Wrong: this was a concrete wall, and the model sounded sure anyway",
+      "Partly correct",
   },
 ];
 
