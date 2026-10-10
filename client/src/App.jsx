@@ -151,6 +151,15 @@ export default function App() {
       const small = await resizeToJpeg(file, 200, 0.7);
       setThumb(await blobToDataUrl(small));
 
+      if (!IS_LOCAL && !import.meta.env.VITE_API_URL) {
+        await new Promise((r) => setTimeout(r, 1200));
+        setResult({
+          ...DEMO_RESULTS[Math.floor(Math.random() * DEMO_RESULTS.length)],
+          demo: true,
+        });
+        return;
+      }
+
       const form = new FormData();
       form.append("photo", jpeg, "photo.jpg");
 
@@ -228,8 +237,8 @@ export default function App() {
           <h2>{result.name}</h2>
           {result.demo && (
             <p className="demo">
-              Live model unavailable right now, so this is a sample result from
-              my outdoor tests.
+              Demo mode: the real app runs Gemma locally on my laptop. This is
+              a sample result from my outdoor tests, not a live identification.
             </p>
           )}
           <p>{result.fact}</p>
