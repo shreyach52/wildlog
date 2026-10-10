@@ -38,6 +38,13 @@ function loadEntries() {
     return [];
   }
 }
+const API = `http://${window.location.hostname}:5000`;
+
+function speak(text) {
+  if (!("speechSynthesis" in window)) return;
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(new SpeechSynthesisUtterance(text));
+}
 
 export default function App() {
   const [preview, setPreview] = useState(null);
@@ -76,8 +83,7 @@ export default function App() {
 
       const form = new FormData();
       form.append("photo", jpeg, "photo.jpg");
-
-      const res = await fetch("http://localhost:5000/api/identify", {
+      const res = await fetch(`${API}/api/identify`, {  
         method: "POST",
         body: form,
       });
@@ -144,6 +150,9 @@ export default function App() {
             Confidence: {result.confidence}
             {seconds && ` · ${seconds}s`}
           </small>
+          <button className="save" onClick={() => speak(`${result.name}. ${result.fact}`)}>
+  Read aloud
+</button>
           <textarea
             placeholder="Where were you? What did you notice?"
             value={note}
