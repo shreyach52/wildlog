@@ -29,7 +29,7 @@ app.post("/api/identify", upload.single("photo"), async (req, res) => {
           {
             role: "user",
             content:
-              'Identify the plant, tree, or bird in this photo. Reply only as JSON: {"name": "common name", "fact": "one short interesting fact", "confidence": "low|medium|high"}. If unsure, say so in confidence.',
+              'Identify the plant, tree, bird, or insect in this photo. Reply only as JSON: {"name": "common name", "fact": "one short interesting fact", "confidence": "low|medium|high"}. If the photo does not show a plant, tree, bird, or insect, set name to "Not a plant, bird, or insect", fact to a short note on what you do see, and confidence to "low". If you cannot be sure of the exact species, name the broader group (for example "a fern") and use low or medium confidence.',
             images: [base64],
           },
         ],
