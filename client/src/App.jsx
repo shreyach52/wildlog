@@ -7,11 +7,45 @@ const IS_LOCAL =
   ["localhost", "127.0.0.1"].includes(window.location.hostname) ||
   /^(192\.168\.|10\.|172\.)/.test(window.location.hostname);
 
-// Replace each fact with the real text Gemma gave you during your outdoor tests.
-const DEMO_RESULTS = [
-  { name: "Mango tree", fact: "PASTE A REAL FACT FROM YOUR JOURNAL", confidence: "high" },
-  { name: "Holy basil (Tulsi)", fact: "PASTE A REAL FACT FROM YOUR JOURNAL", confidence: "high" },
-  { name: "Boston fern", fact: "PASTE A REAL FACT FROM YOUR JOURNAL", confidence: "medium" },
+// Hosted site without a live model: show real recorded results instead of fake uploads.
+const DEMO_ONLY = !IS_LOCAL && !import.meta.env.VITE_API_URL;
+
+// Put matching photos in client/public/samples/ and replace each fact with the
+// real text Gemma gave you during your outdoor tests.
+const SAMPLES = [
+  {
+    image: "/samples/mango.jpg",
+    name: "Mango tree",
+    fact: "PASTE THE REAL FACT GEMMA GAVE",
+    confidence: "high",
+    seconds: "3.2",
+    verdict: "Correct",
+  },
+  {
+    image: "/samples/basil.jpg",
+    name: "Holy basil (Tulsi)",
+    fact: "PASTE THE REAL FACT GEMMA GAVE",
+    confidence: "high",
+    seconds: "2.8",
+    verdict: "Correct",
+  },
+  {
+    image: "/samples/fern.jpg",
+    name: "Boston fern",
+    fact: "PASTE THE REAL FACT GEMMA GAVE",
+    confidence: "medium",
+    seconds: "4.1",
+    verdict: "Partly right: ferns are hard to tell apart from one photo",
+  },
+  {
+    image: "/samples/wall.jpg",
+    name: "Grey rock",
+    fact: "PASTE THE REAL FACT GEMMA GAVE",
+    confidence: "high",
+    seconds: "20.1",
+    verdict:
+      "Wrong: this was a concrete wall, and the model sounded sure anyway",
+  },
 ];
 
 const QUESTS = [
@@ -116,7 +150,58 @@ function Quests() {
   );
 }
 
-export default function App() {
+function DemoView() {
+  const [selected, setSelected] = useState(null);
+
+  return (
+    <main className="app">
+      <h1>WildLog</h1>
+      <p className="sub">Point, snap, learn. Then put the phone away.</p>
+
+      <p className="demo">
+        Demo mode: the real app runs Gemma locally on my laptop, with no
+        internet. These are real results from my outdoor tests, including the
+        mistakes. Tap a photo to see what the model said.
+      </p>
+
+      <Quests />
+
+      <div className="samples">
+        {SAMPLES.map((s) => (
+          <button
+            key={s.name}
+            className={
+              "sample" + (selected && selected.name === s.name ? " active" : "")
+            }
+            onClick={() => setSelected(s)}
+          >
+            <img src={s.image} alt={s.name} />
+          </button>
+        ))}
+      </div>
+
+      {selected && (
+        <section className="result">
+          <h2>{selected.name}</h2>
+          <p>{selected.fact}</p>
+          <small>
+            Confidence: {selected.confidence} · {selected.seconds}s on a CPU-only
+            laptop
+          </small>
+          <p className="verdict">{selected.verdict}</p>
+          <button
+            className="save"
+            onClick={() => speak(`${selected.name}. ${selected.fact}`)}
+          >
+            Read aloud
+          </button>
+        </section>
+      )}
+    </main>
+  );
+}
+
+function LiveApp() {
   const [preview, setPreview] = useState(null);
   const [thumb, setThumb] = useState(null);
   const [result, setResult] = useState(null);
@@ -151,15 +236,6 @@ export default function App() {
       const small = await resizeToJpeg(file, 200, 0.7);
       setThumb(await blobToDataUrl(small));
 
-      if (!IS_LOCAL && !import.meta.env.VITE_API_URL) {
-        await new Promise((r) => setTimeout(r, 1200));
-        setResult({
-          ...DEMO_RESULTS[Math.floor(Math.random() * DEMO_RESULTS.length)],
-          demo: true,
-        });
-        return;
-      }
-
       const form = new FormData();
       form.append("photo", jpeg, "photo.jpg");
 
@@ -174,14 +250,7 @@ export default function App() {
       setResult(data);
       setSeconds(((Date.now() - start) / 1000).toFixed(1));
     } catch (err) {
-      if (!IS_LOCAL) {
-        setResult({
-          ...DEMO_RESULTS[Math.floor(Math.random() * DEMO_RESULTS.length)],
-          demo: true,
-        });
-      } else {
-        setError(err.message);
-      }
+      setError(err.message);
     } finally {
       setLoading(false);
       e.target.value = "";
@@ -235,12 +304,6 @@ export default function App() {
       {result && (
         <section className="result">
           <h2>{result.name}</h2>
-          {result.demo && (
-            <p className="demo">
-              Demo mode: the real app runs Gemma locally on my laptop. This is
-              a sample result from my outdoor tests, not a live identification.
-            </p>
-          )}
           <p>{result.fact}</p>
           <small>
             Confidence: {result.confidence}
@@ -285,4 +348,8 @@ export default function App() {
       ))}
     </main>
   );
+}
+
+export default function App() {
+  return DEMO_ONLY ? <DemoView /> : <LiveApp />;
 }
